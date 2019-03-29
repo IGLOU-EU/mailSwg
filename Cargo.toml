@@ -1,0 +1,7 @@
+[package]
+name = "mailSwg"
+version = "0.1.0"
+authors = ["adrien <adrien@iglou.eu>"]
+edition = "2018"
+
+[dependencies]

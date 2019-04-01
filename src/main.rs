@@ -1,6 +1,6 @@
 use std::thread;
 use std::io::{Read,Write,BufReader,BufRead};
-use std::net::TcpListener;
+use std::net::{TcpListener,TcpStream};
 
 const SERVER: &str = "mailSwg";
 
@@ -16,11 +16,10 @@ fn main() {
                          stream.local_addr().unwrap());
                 thread::spawn(move|| {
                     // connection succeeded
-                    let req = &stream.try_clone().unwrap();
-                    let res = stream.try_clone().unwrap();
+                    //let req = &stream.try_clone().unwrap();
+                    let res = &stream.try_clone().unwrap();
                     tcp_send(res, http_json_header("200 OK", "application/json", "{\"success\":true}".len()), "{\"success\":true}");
-                    tcp_read(req);
-                    tcp_read(req);
+                    tcp_read(stream);
                 });
             }
             Err(e) => println!("Unable to connect: {}", e),
@@ -32,14 +31,12 @@ fn tcp_send<W>(mut stream: W, header: String, rstr: &str) where W: Write {
 	write!(&mut stream, "{}{}", header, rstr).unwrap();
 }
 
-fn tcp_read<R>(stream: R) where R: Read {
-    let reader = BufReader::new(stream);
+fn tcp_read (mut stream: TcpStream) {
+    let mut buffer = [0; 2048];
+    stream.read(&mut buffer).unwrap();
 
-    for line in reader.lines() {
-        let lstr = line.unwrap();
-
-        if lstr == "" { break; }
-        println!(">> {}", lstr);
+    for line in String::from_utf8_lossy(&buffer[..]).lines() {
+        println!(">> {}", line);
     }
 }
 

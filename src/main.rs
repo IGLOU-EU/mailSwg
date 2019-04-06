@@ -11,36 +11,42 @@ fn main() {
         match stream {
             Ok(stream) => {
                 println!("new client!");
-                println!("connection from {} to {}",
-                         stream.peer_addr().unwrap(),
-                         stream.local_addr().unwrap());
-                thread::spawn(move|| {
-                    // connection succeeded
-                    //let req = &stream.try_clone().unwrap();
-                    let res = &stream.try_clone().unwrap();
-                    tcp_send(res, http_json_header("200 OK", "application/json", "{\"success\":true}".len()), "{\"success\":true}");
-                    tcp_read(stream);
-                });
+                println!("connection from {} to {}", stream.peer_addr().unwrap(), stream.local_addr().unwrap());
+                thread::spawn(move|| {handle_connection(stream);});
             }
             Err(e) => println!("Unable to connect: {}", e),
         }
     }
 }
 
-fn tcp_send<W>(mut stream: W, header: String, rstr: &str) where W: Write {
-	write!(&mut stream, "{}{}", header, rstr).unwrap();
-}
+fn handle_connection(mut stream: TcpStream) {
+    // Get data
+    let mut request   = String::new();
+    let mut post_data = String::new();
 
-fn tcp_read (mut stream: TcpStream) {
     let mut buffer = [0; 2048];
     stream.read(&mut buffer).unwrap();
 
     for line in String::from_utf8_lossy(&buffer[..]).lines() {
+        if request.is_empty() { request = line.to_string(); }
+        post_data = line.to_string();
+
         println!(">> {}", line);
     }
+
+    // Post data
+    let rstr = format!("{}{}{}{}{}", "{\"success\":true, \"id\":\"", request, "\", \"request\":\"", "", "\"}");
+        println!("| {}", rstr);
+    let response = format!("{}{}",
+                            http_header("200 OK", "application/json", rstr.len()),
+                            rstr
+                          );
+
+    stream.write(response.as_bytes()).unwrap();
+    stream.flush().unwrap();
 }
 
-fn http_json_header(code: &str, ctype: &str, clen: usize) -> String {
+fn http_header(code: &str, ctype: &str, clen: usize) -> String {
     format!("{}{}{}{}{}{}{}{}{}",
             "HTTP/1.1", code,
             "\nserver: ", SERVER,

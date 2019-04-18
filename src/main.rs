@@ -1,5 +1,5 @@
 use std::thread;
-use std::io::{Read,Write,BufReader,BufRead};
+use std::io::{Read,Write};
 use std::net::{TcpListener,TcpStream};
 
 const SERVER: &str = "mailSwg";
@@ -29,13 +29,15 @@ fn handle_connection(mut stream: TcpStream) {
 
     for line in String::from_utf8_lossy(&buffer[..]).lines() {
         if request.is_empty() { request = line.to_string(); }
-        post_data = line.to_string();
+        
+        post_data.clear();
+        post_data.push_str(line.trim());
 
         println!(">> {}", line);
     }
 
     // Post data
-    let rstr = format!("{}{}{}{}{}", "{\"success\":true, \"id\":\"", request, "\", \"request\":\"", "", "\"}");
+    let rstr = format!("{}{}{}{}{}", "{\"success\":true, \"id\":\"", request, "\", \"request\":\"", post_data, "\"}");
         println!("| {}", rstr);
     let response = format!("{}{}",
                             http_header("200 OK", "application/json", rstr.len()),

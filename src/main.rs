@@ -24,8 +24,11 @@ fn handle_connection(mut stream: TcpStream) {
     let mut request   = String::new();
     let mut post_data = String::new();
 
-    let mut buffer = [0; 2048];
-    stream.read(&mut buffer).unwrap();
+    let mut buffer = Vec::new();
+    {
+    let mut handle = <TcpStream as Read>::by_ref(&mut stream);
+    handle.take(450).read_to_end(&mut buffer).unwrap();
+    }
 
     for line in String::from_utf8_lossy(&buffer[..]).lines() {
         if request.is_empty() { request = line.to_string(); }
@@ -38,7 +41,6 @@ fn handle_connection(mut stream: TcpStream) {
 
     // Post data
     let rstr = format!("{}{}{}{}{}", "{\"success\":true, \"id\":\"", request, "\", \"request\":\"", post_data, "\"}");
-        println!("| {}", rstr);
     let response = format!("{}{}",
                             http_header("200 OK", "application/json", rstr.len()),
                             rstr

@@ -1,0 +1,9 @@
+{
+    "email": {
+        "smtp": {},
+        "list": {}
+    },
+    "request": {},
+    "honeypot": true,
+    "acceptable_form": {}
+}

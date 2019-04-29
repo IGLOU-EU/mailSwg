@@ -1,9 +1,19 @@
 {
-    "email": {
-        "smtp": {},
-        "list": {}
-    },
-    "request": {},
+    "title": "Iglou.eu",
     "honeypot": true,
-    "acceptable_form": {}
+    "acceptable_form": [],
+    "return": {
+        "success": "",
+        "fail": ""
+    },
+    "request": [],
+    "email": {
+        "smtp": {
+            "server": "",
+            "flags": "/secure",
+            "user": "",
+            "password": ""
+        },
+        "list": ["adrien@iglou.eu"]
+    }
 }

@@ -4,15 +4,15 @@ declare(strict_types = 1);
 namespace main {
 
 use Phalcon\Http\Request;
-use Phalcon\Http\Response;
 
 function start(): void
 {
     $request  = new Request();
-    $response = new Response();
 
-    $id = '';
+    $out = '';
+    $bf  = '';
 
+    // Check if is POST, is a valid ID and ok
     if (true !== $request->isPost())
         \error\send(405);
 
@@ -21,23 +21,110 @@ function start(): void
         true !== ctype_alnum($request->getQuery('id')))
         \error\send(400);
     else
-        $id = APP_DATA.'/'.$request->getQuery('id').'.json';
+        $bf = APP_DATA.'/'.$request->getQuery('id').'.json';
 
-    if (!\file\exist($id) OR !\file\is_readable($id, true))
+    if (!\file\exist($bf) OR !\file\is_readable($bf, true))
         \error\send(500);
 
-    $id = \file\get_decode($id);
+    \config\set(\file\get_decode($bf));
 
-    // si acform
-    // ou si pas
-    var_dump($request->getRawBody()); // retourn en claire les &
+    // Check POST request and format to str
+    if (true === \config\get('honeypot') AND (
+        $request->hasPost('name') OR
+        $request->hasPost('email') OR
+        $request->hasPost('message') OR
+        $request->hasPost('honeypot')))
+        \error\send(418);
 
-    $response->send();
+    if (empty($id['acceptable_form']))
+        $out = $request->getPost(null, ['trim', 'string']);
+    else
+        $out = act_form($request->getPost(null, ['trim', 'string']));
+
+    $out = format_body($out);
+
+    // Check and send email
+    $bf = \config\get('email');
+    if (!empty($bf['email']['list']))
+        email_send($bf['email']);
+
+    // Check and send request
+
+    // Return to user
 }
 
-function format_body(): void
+function email_send(array $datas): void
 {
+    $imap = $datas['smtp'];
+    $imap = imap_open(
+        $imap['server'].$imap['flags'],
+        $imap['user'],
+        $imap['password'],
+        null, 3
+    );
+
+    if (imap_close($imap))
+        \error\log('Imap close :'.$imap['user'].'@'.$imap['server']);
+}
+
+function act_form(array $in): array
+{
+    $out = array();
+
+    foreach (\config\get('acceptable_form') as $value)
+        $out[$value] = $in[$value];
+
+    return $out;
+}
+
+function format_body(array $in): string
+{
+    $buff= \config\get('title')['title'];
+    $out = '# Email du service '.$buff.PHP_EOL.PHP_EOL;
+
+    foreach ($in as $key => &$value) {
+        $out .= '## '.$key.PHP_EOL;
+        $out .= $value.PHP_EOL.PHP_EOL;
+    }
+
+    return $out;
+}
+}
+
+namespace config {
+function core(int $action, array $args = array()): array
+{
+    static $datas = array();
+
+    if (1 === $action) {
+        return ($datas);
+    } else if (2 === $action) {
+        $datas = array_merge($datas, $args);
+        return ($args);
+    }
+
+    return (array());
+}
+
+function get(): array
+{
+    $datas = core(1);
+
+    if (0 >= func_num_args())
+        return $datas;
+
+    $buff  = array();
+    $args  = func_get_args();
     
+    foreach ($args as &$arg)
+        $buff[$arg] = $datas[$arg];
+
+    return ($buff);
+}
+
+function set(array $args): array
+{
+    return (core(2, $args));
 }
 }
 
@@ -86,7 +173,7 @@ function send(int $code, string $str = NULL): void
             $why = 'Only POST request is allowed';
             break;
         case 418:
-            $msg = 'I’m a teapot';
+            $msg = 'I\'m a teapot';
             $why = 'No bot allowed';
             break;
         case 500:

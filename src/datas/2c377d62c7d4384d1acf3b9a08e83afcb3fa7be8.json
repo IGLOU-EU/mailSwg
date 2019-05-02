@@ -10,7 +10,7 @@
     "email": {
         "smtp": {
             "server": "",
-            "flags": "/secure",
+            "port": 25,
             "user": "",
             "password": ""
         },

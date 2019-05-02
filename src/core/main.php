@@ -46,25 +46,96 @@ function start(): void
     // Check and send email
     $bf = \config\get('email');
     if (!empty($bf['email']['list']))
-        email_send($bf['email']);
+        email_send($out, $bf['email']);
 
     // Check and send request
 
     // Return to user
 }
 
-function email_send(array $datas): void
+function email_send(string $msg, array $datas): void
 {
-    $imap = $datas['smtp'];
-    $imap = imap_open(
-        $imap['server'].$imap['flags'],
-        $imap['user'],
-        $imap['password'],
-        null, 3
+    $errno = 0;
+    $errtr = '';
+
+    $serv  = $datas['smtp'];
+    $title = \config\get('title')['title'];
+    $sock  = fsockopen($serv['server'], $serv['port'], $errno, $errtr, 12);
+
+    if (!$sock)
+        \error\send(500, '['.$title.'] Can\'t connecting to : '.$serv['server'].' ('.$errno.') ('.$errtr.')');
+
+    sock_check($sock, '220');
+
+    fwrite($sock, 'EHLO '.$serv['server'].PHP_EOL);
+    sock_check($sock, '250');
+
+    else if (25 !== $serv['port'] OR 465 !== $serv['port']) {
+        fwrite($sock, 'STARTTLS'.PHP_EOL);
+        sock_check($sock, '220');
+
+        stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+
+        fwrite($sock, 'EHLO '.$serv['server'].PHP_EOL);
+        sock_check($sock, '250');
+    }
+
+    fwrite($sock, 'AUTH LOGIN'.PHP_EOL);
+    sock_check($sock, '334');
+
+    fwrite($sock, base64_encode($serv['user']).PHP_EOL);
+    sock_check($sock, '334');
+
+    fwrite($sock, base64_encode($serv['password']).PHP_EOL);
+    sock_check($sock, '235');
+
+    fwrite($sock, 'MAIL FROM: <mailbot@'.$serv['server'].'>'.PHP_EOL);
+    sock_check($sock, '250');
+
+    foreach ($datas['list'] as $mail) {
+        fwrite($sock, 'RCPT TO: <'.$mail.'>'.PHP_EOL);
+        sock_check($sock, '250');
+    }
+
+    fwrite($sock, 'DATA'.PHP_EOL);
+    sock_check($sock, '354');
+
+    fwrite($sock, ''
+        .'Subject: '.APP_NAME.' | Message from '.$title.' service'.PHP_EOL
+        .'From: (BOT)'.$title.' <mailbot@'.$serv['server'].'>'.PHP_EOL
+        .'To: <'.implode('>, <', $datas['list']).'>'.PHP_EOL
+        .'X-Mailer: '.APP_NAME.PHP_EOL
+        .'Content-Type: text/plain; charset=UTF-8'.PHP_EOL
+        .PHP_EOL.PHP_EOL
+        .$msg.PHP_EOL
     );
 
-    if (imap_close($imap))
-        \error\log('Imap close :'.$imap['user'].'@'.$imap['server']);
+    fwrite($sock, '.'.PHP_EOL);
+    sock_check($sock, '250');
+
+    fwrite($sock, 'QUIT'.PHP_EOL);
+
+    if (!fclose($sock))
+        \error\log('Sock close for '.$title, false);
+}
+
+function sock_check($sock, string $expect): void {
+    do {
+        $response = fgets($sock, 1024);
+
+        if (false === $response) {
+            \error\log('SMTP faillure no response code', false);
+            return;
+        }
+    } while (substr((string) $response, 3, 1) != ' ');
+
+    if (substr((string) $response, 0, 3) != $expect)
+        \error\log('SMTP faillure code '.$response, false);
+
+    var_dump($response);
+
+    stream_set_timeout($sock, 300);
+    set_time_limit(310);
 }
 
 function act_form(array $in): array
@@ -80,13 +151,14 @@ function act_form(array $in): array
 function format_body(array $in): string
 {
     $buff= \config\get('title')['title'];
-    $out = '# Email du service '.$buff.PHP_EOL.PHP_EOL;
+    $out = '# Message via le service '.$buff.PHP_EOL.PHP_EOL;
 
     foreach ($in as $key => &$value) {
         $out .= '## '.$key.PHP_EOL;
         $out .= $value.PHP_EOL.PHP_EOL;
     }
 
+    $out .= '*Genrated by '.APP_NAME.'*';
     return $out;
 }
 }
@@ -192,11 +264,12 @@ function send(int $code, string $str = NULL): void
     \error\log($msg);
 }
 
-function log(string $str): void
+function log(string $str, bool $ext=true): void
 {
-    error_log('['.date(DATE_RFC2822).'][error]'.$str, 0);
+    error_log('[error]'.$str, 0);
 
-    exit(1);
+    if ($ext)
+        exit(1);
 }
 }
 

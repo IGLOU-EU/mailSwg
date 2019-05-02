@@ -3,7 +3,7 @@
 * ! NoCopyright, NoCopyleft for a free world !
 * ! PasDeCopyright, PasDeCopyleft pour un monde libre !
 * ----------
-* Copyright (C) [2015] [Kara.Adrien]   <adrien@iglou.eu>
+* Copyright (C) [2019] [Kara.Adrien]   <adrien@iglou.eu>
 * ----------
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 * ----------
-* Beta 0.6.0 - 15 mars 2016
+* Beta 0.1.0 - 26 mars 2019
 * ----------
-* IGLOU cms
+* MailSwg
 ** ---------- */
+
+define('APP_NAME', 'MailSwg');
 
 // Define the absolute path
 define('APP_ROOT', dirname(__DIR__) );

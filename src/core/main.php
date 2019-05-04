@@ -41,7 +41,7 @@ function start(): void
 
     $buffer = $request->getPost(null, ['trim', 'string']);
 
-    if (isset($config['acceptable_form']))
+    if (!empty($config['acceptable_form']))
         $buffer = acceptable_form($buffer, $config['acceptable_form']);
 
     $datas = format_body($buffer, $config['title']);

@@ -72,6 +72,9 @@ function request_send(string $msg, array &$datas): void
     $msg   = substr(json_encode($msg), 1, -1);
 
     foreach ($datas['request'] as $rqst) {
+        if (empty($rqst['url']))
+            continue;
+
         $url = parse_url($rqst['url']);
         $url['type'] = empty($rqst['datas']) ? 'GET' : 'POST';
 

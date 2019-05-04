@@ -49,8 +49,57 @@ function start(): void
         email_send($out, $bf['email']);
 
     // Check and send request
+    $bf = \config\get('request');
+    if (!empty($bf['request']))
+        request_send($out, $bf['request']);
 
     // Return to user
+}
+
+function request_send(string $msg, array $datas): void
+{
+    $msg   = substr(json_encode($msg), 1, -1);
+    $title = \config\get('title')['title'];
+
+    foreach ($datas as $rqst) {
+        $url = parse_url($rqst['url']);
+        $url['type'] = empty($rqst['datas']) ? 'GET' : 'POST';
+
+        if ('https' === $url['scheme']) {
+            $url['pfix'] = 'tls://';
+            $url['port'] = empty($url['port']) ? 443 : $url['port'];
+        } else {
+            $url['pfix'] = 'tcp://';
+            $url['port'] = empty($url['port']) ? 80 : $url['port'];
+        }
+        // Build datas
+        $rqst['datas'] = str_replace('MAILSWG_TITLE', APP_NAME.' | Message from '.$title.' service', $rqst['datas']);
+        $rqst['datas'] = str_replace('MAILSWG_BODY', $msg, $rqst['datas']);
+
+        // Build header
+        $header  = $url['type'].' '.$url['path'].$url['query'].' HTTP/1.1'.PHP_EOL;
+        $header .= 'Host: '.$url['host'].PHP_EOL;
+        $header .= implode(PHP_EOL, $rqst['header']).PHP_EOL;
+
+        if ('POST' === $url['type'])
+            $header .= 'Content-length: '.strlen($rqst['datas']).PHP_EOL;
+
+        if (isset($url['user']) AND isset($url['pass']))
+            $header .= 'Authorization: Basic '.base64_encode($url['user'].':'.$url['pass']);
+
+        $header .= 'Connection: close'.PHP_EOL.PHP_EOL;
+
+        // Send request
+        if (!($sock = fsockopen($url['pfix'].$url['host'], $url['port'])))
+            \error\send(500, '['.$title.'] Can\'t send to : '.$serv['server']);
+
+        fputs($sock, $header.$rqst['datas'].PHP_EOL);
+
+        if (false === strpos(fgets($sock, 128), '200 OK'))
+            \error\send(500, '['.$title.'] Can\'t send to : '.$serv['server']);
+
+        fclose($sock); 
+    }
 }
 
 function email_send(string $msg, array $datas): void
@@ -70,7 +119,7 @@ function email_send(string $msg, array $datas): void
     fwrite($sock, 'EHLO '.$serv['server'].PHP_EOL);
     sock_check($sock, '250');
 
-    else if (25 !== $serv['port'] OR 465 !== $serv['port']) {
+    if (25 !== $serv['port'] OR 465 !== $serv['port']) {
         fwrite($sock, 'STARTTLS'.PHP_EOL);
         sock_check($sock, '220');
 
@@ -119,23 +168,25 @@ function email_send(string $msg, array $datas): void
         \error\log('Sock close for '.$title, false);
 }
 
-function sock_check($sock, string $expect): void {
+function sock_check($sock, string $expect): bool {
     do {
         $response = fgets($sock, 1024);
 
         if (false === $response) {
             \error\log('SMTP faillure no response code', false);
-            return;
+            return false;
         }
     } while (substr((string) $response, 3, 1) != ' ');
 
-    if (substr((string) $response, 0, 3) != $expect)
+    if (substr((string) $response, 0, 3) != $expect) {
         \error\log('SMTP faillure code '.$response, false);
-
-    var_dump($response);
+        return false;
+    }
 
     stream_set_timeout($sock, 300);
     set_time_limit(310);
+
+    return true;
 }
 
 function act_form(array $in): array

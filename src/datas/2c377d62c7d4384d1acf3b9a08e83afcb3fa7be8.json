@@ -1,12 +1,18 @@
 {
-    "title": "Iglou.eu",
+    "title": "",
     "honeypot": true,
     "acceptable_form": [],
     "return": {
         "success": "",
         "fail": ""
     },
-    "request": [],
+    "request": [
+        {
+            "url": "",
+            "header": [],
+            "datas": ""
+        }
+    ],
     "email": {
         "smtp": {
             "server": "",
@@ -14,6 +20,6 @@
             "user": "",
             "password": ""
         },
-        "list": ["adrien@iglou.eu"]
+        "list": []
     }
 }

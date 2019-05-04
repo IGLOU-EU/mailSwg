@@ -54,8 +54,17 @@ function start(): void
         request_send($out, $bf['request']);
 
     // Return to user
+    success();
 }
 
+function success(): void
+{
+    $rps = new \Phalcon\Http\Response();
+    $rps->setStatusCode(200, 'OK');
+    $rps->setHeader('Content-Type', 'application/json');
+    $rps->setContent('{"success":true}');
+    $rps->send();
+}
 function request_send(string $msg, array $datas): void
 {
     $msg   = substr(json_encode($msg), 1, -1);

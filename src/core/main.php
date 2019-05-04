@@ -9,8 +9,8 @@ function start(): void
 {
     $request  = new Request();
 
-    $out = '';
-    $bf  = '';
+    $datas   = '';
+    $buffer  = '';
 
     // Check if is POST, is a valid ID and ok
     if (true !== $request->isPost())
@@ -21,12 +21,12 @@ function start(): void
         true !== ctype_alnum($request->getQuery('id')))
         \error\send(400);
     else
-        $bf = APP_DATA.'/'.$request->getQuery('id').'.json';
+        $buffer = APP_DATA.'/'.$request->getQuery('id').'.json';
 
-    if (!\file\exist($bf) OR !\file\is_readable($bf, true))
+    if (!\file\exist($buffer) OR !\file\is_readable($buffer, true))
         \error\send(500);
 
-    \config\set(\file\get_decode($bf));
+    \config\set(\file\get_decode($buffer));
 
     // Check POST request and format to str
     if (true === \config\get('honeypot') AND (
@@ -36,22 +36,22 @@ function start(): void
         $request->hasPost('honeypot')))
         \error\send(418);
 
-    if (empty($id['acceptable_form']))
-        $out = $request->getPost(null, ['trim', 'string']);
-    else
-        $out = act_form($request->getPost(null, ['trim', 'string']));
+    $buffer = $request->getPost(null, ['trim', 'string']);
 
-    $out = format_body($out);
+    if (isset($id['acceptable_form']))
+        $buffer = acceptable_form($buffer);
+
+    $datas = format_body($buffer);
 
     // Check and send email
-    $bf = \config\get('email');
-    if (!empty($bf['email']['list']))
-        email_send($out, $bf['email']);
+    $buffer = \config\get('email');
+    if (!empty($buffer['email']['list']))
+        email_send($datas, $buffer['email']);
 
     // Check and send request
-    $bf = \config\get('request');
-    if (!empty($bf['request']))
-        request_send($out, $bf['request']);
+    $buffer = \config\get('request');
+    if (!empty($buffer['request']))
+        request_send($datas, $buffer['request']);
 
     // Return to user
     success();
@@ -65,6 +65,7 @@ function success(): void
     $rps->setContent('{"success":true}');
     $rps->send();
 }
+
 function request_send(string $msg, array $datas): void
 {
     $msg   = substr(json_encode($msg), 1, -1);
@@ -107,7 +108,7 @@ function request_send(string $msg, array $datas): void
         if (false === strpos(fgets($sock, 128), '200 OK'))
             \error\send(500, '['.$title.'] Can\'t send to : '.$serv['server']);
 
-        fclose($sock); 
+        fclose($sock);
     }
 }
 
@@ -198,7 +199,7 @@ function sock_check($sock, string $expect): bool {
     return true;
 }
 
-function act_form(array $in): array
+function acceptable_form(array &$in): array
 {
     $out = array();
 
@@ -208,17 +209,20 @@ function act_form(array $in): array
     return $out;
 }
 
-function format_body(array $in): string
+function format_body(array &$in): string
 {
     $buff= \config\get('title')['title'];
-    $out = '# Message via le service '.$buff.PHP_EOL.PHP_EOL;
+    $out = '### ('.APP_NAME.') Message via le service '.$buff.PHP_EOL.PHP_EOL;
 
     foreach ($in as $key => &$value) {
-        $out .= '## '.$key.PHP_EOL;
+        if (empty($value))
+            continue;
+
+        $out .= '#### '.strtoupper($key).' :'.PHP_EOL;
         $out .= $value.PHP_EOL.PHP_EOL;
     }
 
-    $out .= '*Genrated by '.APP_NAME.'*';
+    $out .= '_Genrated by '.APP_NAME.'_';
     return $out;
 }
 }
@@ -247,7 +251,7 @@ function get(): array
 
     $buff  = array();
     $args  = func_get_args();
-    
+
     foreach ($args as &$arg)
         $buff[$arg] = $datas[$arg];
 
@@ -332,4 +336,3 @@ function log(string $str, bool $ext=true): void
         exit(1);
 }
 }
-

@@ -7,10 +7,11 @@ use Phalcon\Http\Request;
 
 function start(): void
 {
-    $request  = new Request();
 
     $datas   = '';
     $buffer  = '';
+    $config  = Array();
+    $request = new Request();
 
     // Check if is POST, is a valid ID and ok
     if (true !== $request->isPost())
@@ -26,32 +27,32 @@ function start(): void
     if (!\file\exist($buffer) OR !\file\is_readable($buffer, true))
         \error\send(500);
 
-    \config\set(\file\get_decode($buffer));
+    $config = \file\get_decode($buffer);
 
     // Check POST request and format to str
-    if (true === \config\get('honeypot') AND (
-        $request->hasPost('name') OR
-        $request->hasPost('email') OR
-        $request->hasPost('message') OR
-        $request->hasPost('honeypot')))
+    if (true === $config['honeypot'] AND (
+        isset($_POST['name']) OR
+        isset($_POST['email']) OR
+        isset($_POST['message']) OR
+        isset($_POST['honeypot'])
+       )) {
         \error\send(418);
+    }
 
     $buffer = $request->getPost(null, ['trim', 'string']);
 
-    if (isset($id['acceptable_form']))
-        $buffer = acceptable_form($buffer);
+    if (isset($config['acceptable_form']))
+        $buffer = acceptable_form($buffer, $config['acceptable_form']);
 
-    $datas = format_body($buffer);
+    $datas = format_body($buffer, $config['title']);
 
     // Check and send email
-    $buffer = \config\get('email');
-    if (!empty($buffer['email']['list']))
-        email_send($datas, $buffer['email']);
+    if (!empty($config['email']['list']))
+        email_send($datas, $config);
 
     // Check and send request
-    $buffer = \config\get('request');
-    if (!empty($buffer['request']))
-        request_send($datas, $buffer['request']);
+    if (!empty($config['request']))
+        request_send($datas, $config);
 
     // Return to user
     success();
@@ -66,12 +67,11 @@ function success(): void
     $rps->send();
 }
 
-function request_send(string $msg, array $datas): void
+function request_send(string $msg, array &$datas): void
 {
     $msg   = substr(json_encode($msg), 1, -1);
-    $title = \config\get('title')['title'];
 
-    foreach ($datas as $rqst) {
+    foreach ($datas['request'] as $rqst) {
         $url = parse_url($rqst['url']);
         $url['type'] = empty($rqst['datas']) ? 'GET' : 'POST';
 
@@ -83,7 +83,7 @@ function request_send(string $msg, array $datas): void
             $url['port'] = empty($url['port']) ? 80 : $url['port'];
         }
         // Build datas
-        $rqst['datas'] = str_replace('MAILSWG_TITLE', APP_NAME.' | Message from '.$title.' service', $rqst['datas']);
+        $rqst['datas'] = str_replace('MAILSWG_TITLE', APP_NAME.' | Message from '.$datas['title'].' service', $rqst['datas']);
         $rqst['datas'] = str_replace('MAILSWG_BODY', $msg, $rqst['datas']);
 
         // Build header
@@ -101,28 +101,26 @@ function request_send(string $msg, array $datas): void
 
         // Send request
         if (!($sock = fsockopen($url['pfix'].$url['host'], $url['port'])))
-            \error\send(500, '['.$title.'] Can\'t send to : '.$serv['server']);
+            \error\send(500, '['.$datas['title'].'] Can\'t send to : '.$serv['server']);
 
         fputs($sock, $header.$rqst['datas'].PHP_EOL);
 
         if (false === strpos(fgets($sock, 128), '200 OK'))
-            \error\send(500, '['.$title.'] Can\'t send to : '.$serv['server']);
+            \error\send(500, '['.$datas['title'].'] Can\'t send to : '.$serv['server']);
 
         fclose($sock);
     }
 }
 
-function email_send(string $msg, array $datas): void
+function email_send(string $msg, array &$datas): void
 {
-    $errno = 0;
-    $errtr = '';
+    $errno  = 0;
+    $errtr  = '';
+    $serv   = &$datas['email']['smtp'];
+    $emails = &$datas['email']['email'];
 
-    $serv  = $datas['smtp'];
-    $title = \config\get('title')['title'];
-    $sock  = fsockopen($serv['server'], $serv['port'], $errno, $errtr, 12);
-
-    if (!$sock)
-        \error\send(500, '['.$title.'] Can\'t connecting to : '.$serv['server'].' ('.$errno.') ('.$errtr.')');
+    if (!($sock  = fsockopen($serv['server'], $serv['port'], $errno, $errtr, 12)))
+        \error\send(500, '['.$datas['title'].'] Can\'t connecting to : '.$serv['server'].' ('.$errno.') ('.$errtr.')');
 
     sock_check($sock, '220');
 
@@ -151,7 +149,7 @@ function email_send(string $msg, array $datas): void
     fwrite($sock, 'MAIL FROM: <mailbot@'.$serv['server'].'>'.PHP_EOL);
     sock_check($sock, '250');
 
-    foreach ($datas['list'] as $mail) {
+    foreach ($emails as $mail) {
         fwrite($sock, 'RCPT TO: <'.$mail.'>'.PHP_EOL);
         sock_check($sock, '250');
     }
@@ -160,9 +158,9 @@ function email_send(string $msg, array $datas): void
     sock_check($sock, '354');
 
     fwrite($sock, ''
-        .'Subject: '.APP_NAME.' | Message from '.$title.' service'.PHP_EOL
+        .'Subject: '.APP_NAME.' | Message from '.$datas['title'].' service'.PHP_EOL
         .'From: (BOT)'.$title.' <mailbot@'.$serv['server'].'>'.PHP_EOL
-        .'To: <'.implode('>, <', $datas['list']).'>'.PHP_EOL
+        .'To: <'.implode('>, <', $emails).'>'.PHP_EOL
         .'X-Mailer: '.APP_NAME.PHP_EOL
         .'Content-Type: text/plain; charset=UTF-8'.PHP_EOL
         .PHP_EOL.PHP_EOL
@@ -175,7 +173,7 @@ function email_send(string $msg, array $datas): void
     fwrite($sock, 'QUIT'.PHP_EOL);
 
     if (!fclose($sock))
-        \error\log('Sock close for '.$title, false);
+        \error\log('Sock close for '.$datas['title'], false);
 }
 
 function sock_check($sock, string $expect): bool {
@@ -199,20 +197,19 @@ function sock_check($sock, string $expect): bool {
     return true;
 }
 
-function acceptable_form(array &$in): array
+function acceptable_form(array &$in, array &$acceptable_form): array
 {
     $out = array();
 
-    foreach (\config\get('acceptable_form') as $value)
+    foreach ($acceptable_form as $value)
         $out[$value] = $in[$value];
 
     return $out;
 }
 
-function format_body(array &$in): string
+function format_body(array &$in, string &$title): string
 {
-    $buff= \config\get('title')['title'];
-    $out = '### ('.APP_NAME.') Message via le service '.$buff.PHP_EOL.PHP_EOL;
+    $out = '### ('.APP_NAME.') Message via le service '.$title.PHP_EOL.PHP_EOL;
 
     foreach ($in as $key => &$value) {
         if (empty($value))
@@ -224,43 +221,6 @@ function format_body(array &$in): string
 
     $out .= '_Genrated by '.APP_NAME.'_';
     return $out;
-}
-}
-
-namespace config {
-function core(int $action, array $args = array()): array
-{
-    static $datas = array();
-
-    if (1 === $action) {
-        return ($datas);
-    } else if (2 === $action) {
-        $datas = array_merge($datas, $args);
-        return ($args);
-    }
-
-    return (array());
-}
-
-function get(): array
-{
-    $datas = core(1);
-
-    if (0 >= func_num_args())
-        return $datas;
-
-    $buff  = array();
-    $args  = func_get_args();
-
-    foreach ($args as &$arg)
-        $buff[$arg] = $datas[$arg];
-
-    return ($buff);
-}
-
-function set(array $args): array
-{
-    return (core(2, $args));
 }
 }
 

@@ -163,7 +163,7 @@ function email_send(array &$msg, array &$datas): void
 
     fwrite($sock, ''
         .'Subject: '.$msg['title'].PHP_EOL
-        .'From: (BOT)'.$title.' <mailbot@'.$serv['server'].'>'.PHP_EOL
+        .'From: [BOT] '.$datas['title'].' <mailbot@'.$serv['server'].'>'.PHP_EOL
         .'To: <'.implode('>, <', $emails).'>'.PHP_EOL
         .'X-Mailer: '.APP_NAME.PHP_EOL
         .'Content-Type: text/plain; charset=UTF-8'.PHP_EOL
@@ -211,9 +211,10 @@ function acceptable_form(array &$in, array &$acceptable_form): array
     return $out;
 }
 
-function format_body(array &$in, string &$title): array
+function format_body(array &$in, string &$app_title): array
 {
-    $title = $out = '# ('.APP_NAME.') Message via le service '.$title.PHP_EOL.PHP_EOL;
+    $title = $out = '# ('.APP_NAME.') Message via le service '.$app_title;
+    $out  .= PHP_EOL.PHP_EOL;
 
     foreach ($in as $key => &$value) {
         if (empty($value))

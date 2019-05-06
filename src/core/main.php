@@ -162,11 +162,15 @@ function email_send(array &$msg, array &$datas): void
     sock_check($sock, '354');
 
     fwrite($sock, ''
-        .'Subject: '.$msg['title'].PHP_EOL
-        .'From: [BOT] '.$datas['title'].' <mailbot@'.$serv['server'].'>'.PHP_EOL
+        .'Subject: =?ISO-8859-15?Q?'.imap_8bit($msg['title']).'?='.PHP_EOL
+        .'From: =?ISO-8859-15?Q?'.imap_8bit('[BOT] '.$datas['title']).'?= <mailbot@'.$serv['server'].'>'.PHP_EOL
         .'To: <'.implode('>, <', $emails).'>'.PHP_EOL
         .'X-Mailer: '.APP_NAME.' '.APP_VERSION.PHP_EOL
-        .'Content-Type: text/plain; charset=UTF-8'
+        .'Date:'.date(DATE_RFC2822).PHP_EOL
+        .'MIME-Version: 1.0'.PHP_EOL
+        .'Content-Type: text/plain; charset=utf-8; format=flowed'.PHP_EOL
+        .'Content-Transfer-Encoding: 8bit'.PHP_EOL
+        .'Content-Language: fr'
         .PHP_EOL.PHP_EOL
         .$msg['body'].PHP_EOL
     );

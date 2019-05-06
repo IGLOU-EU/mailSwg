@@ -5,6 +5,7 @@
 # license that can be found in the LICENSE file.
 
 define('APP_NAME', 'MailSwg');
+define('APP_VERSION', '0.1.0');
 
 // Define the absolute path
 define('APP_ROOT', dirname(__DIR__) );

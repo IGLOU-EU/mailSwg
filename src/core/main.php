@@ -165,8 +165,8 @@ function email_send(array &$msg, array &$datas): void
         .'Subject: '.$msg['title'].PHP_EOL
         .'From: [BOT] '.$datas['title'].' <mailbot@'.$serv['server'].'>'.PHP_EOL
         .'To: <'.implode('>, <', $emails).'>'.PHP_EOL
-        .'X-Mailer: '.APP_NAME.PHP_EOL
-        .'Content-Type: text/plain; charset=UTF-8'.PHP_EOL
+        .'X-Mailer: '.APP_NAME.' '.APP_VERSION.PHP_EOL
+        .'Content-Type: text/plain; charset=UTF-8'
         .PHP_EOL.PHP_EOL
         .$msg['body'].PHP_EOL
     );

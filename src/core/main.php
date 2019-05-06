@@ -163,12 +163,13 @@ function email_send(array &$msg, array &$datas): void
 
     fwrite($sock, ''
         .'Subject: =?ISO-8859-15?Q?'.imap_8bit($msg['title']).'?='.PHP_EOL
-        .'From: =?ISO-8859-15?Q?'.imap_8bit('[BOT] '.$datas['title']).'?= <mailbot@'.$serv['server'].'>'.PHP_EOL
+        .'From: =?ISO-8859-15?Q?'.imap_8bit('[BOT] '.$datas['title']).'?= <mailbot@'.$serv['dns'].'>'.PHP_EOL
         .'To: <'.implode('>, <', $emails).'>'.PHP_EOL
         .'X-Mailer: '.APP_NAME.' '.APP_VERSION.PHP_EOL
+        .'Message-ID: <'.sha1(date(DATE_RFC2822).$datas['dns']).'@'.$serv['server'].'>'.PHP_EOL
         .'Date:'.date(DATE_RFC2822).PHP_EOL
         .'MIME-Version: 1.0'.PHP_EOL
-        .'Content-Type: text/plain; charset=utf-8; format=flowed'.PHP_EOL
+        .'Content-Type: text/plain; charset=utf-8'.PHP_EOL
         .'Content-Transfer-Encoding: 8bit'.PHP_EOL
         .'Content-Language: fr'
         .PHP_EOL.PHP_EOL

@@ -15,6 +15,7 @@
     ],
     "email": {
         "smtp": {
+            "dns": "",
             "server": "",
             "port": 25,
             "user": "",

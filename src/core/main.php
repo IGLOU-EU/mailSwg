@@ -67,9 +67,10 @@ function success(): void
     $rps->send();
 }
 
-function request_send(string $msg, array &$datas): void
+function request_send(array &$msg, array &$datas): void
 {
-    $msg   = substr(json_encode($msg), 1, -1);
+    $title = substr(json_encode($msg['title']), 1, -1);
+    $body  = substr(json_encode($msg['body']), 1, -1);
 
     foreach ($datas['request'] as $rqst) {
         if (empty($rqst['url']))
@@ -86,8 +87,8 @@ function request_send(string $msg, array &$datas): void
             $url['port'] = empty($url['port']) ? 80 : $url['port'];
         }
         // Build datas
-        $rqst['datas'] = str_replace('MAILSWG_TITLE', APP_NAME.' | Message from '.$datas['title'].' service', $rqst['datas']);
-        $rqst['datas'] = str_replace('MAILSWG_BODY', $msg, $rqst['datas']);
+        $rqst['datas'] = str_replace('MAILSWG_TITLE', $title, $rqst['datas']);
+        $rqst['datas'] = str_replace('MAILSWG_BODY', $body, $rqst['datas']);
 
         // Build header
         $header  = $url['type'].' '.$url['path'].$url['query'].' HTTP/1.1'.PHP_EOL;
@@ -115,12 +116,12 @@ function request_send(string $msg, array &$datas): void
     }
 }
 
-function email_send(string $msg, array &$datas): void
+function email_send(array &$msg, array &$datas): void
 {
     $errno  = 0;
     $errtr  = '';
     $serv   = &$datas['email']['smtp'];
-    $emails = &$datas['email']['email'];
+    $emails = &$datas['email']['list'];
 
     if (!($sock  = fsockopen($serv['server'], $serv['port'], $errno, $errtr, 12)))
         \error\send(500, '['.$datas['title'].'] Can\'t connecting to : '.$serv['server'].' ('.$errno.') ('.$errtr.')');
@@ -161,13 +162,13 @@ function email_send(string $msg, array &$datas): void
     sock_check($sock, '354');
 
     fwrite($sock, ''
-        .'Subject: '.APP_NAME.' | Message from '.$datas['title'].' service'.PHP_EOL
+        .'Subject: '.$msg['title'].PHP_EOL
         .'From: (BOT)'.$title.' <mailbot@'.$serv['server'].'>'.PHP_EOL
         .'To: <'.implode('>, <', $emails).'>'.PHP_EOL
         .'X-Mailer: '.APP_NAME.PHP_EOL
         .'Content-Type: text/plain; charset=UTF-8'.PHP_EOL
         .PHP_EOL.PHP_EOL
-        .$msg.PHP_EOL
+        .$msg['body'].PHP_EOL
     );
 
     fwrite($sock, '.'.PHP_EOL);
@@ -210,20 +211,21 @@ function acceptable_form(array &$in, array &$acceptable_form): array
     return $out;
 }
 
-function format_body(array &$in, string &$title): string
+function format_body(array &$in, string &$title): array
 {
-    $out = '### ('.APP_NAME.') Message via le service '.$title.PHP_EOL.PHP_EOL;
+    $title = $out = '# ('.APP_NAME.') Message via le service '.$title.PHP_EOL.PHP_EOL;
 
     foreach ($in as $key => &$value) {
         if (empty($value))
             continue;
 
-        $out .= '#### '.strtoupper($key).' :'.PHP_EOL;
+        $out .= '## '.strtoupper($key).' :'.PHP_EOL;
         $out .= $value.PHP_EOL.PHP_EOL;
     }
 
     $out .= '_Genrated by '.APP_NAME.'_';
-    return $out;
+
+    return array('title' => $title, 'body' => $out);
 }
 }
 

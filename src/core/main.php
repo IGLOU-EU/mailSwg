@@ -218,18 +218,21 @@ function acceptable_form(array &$in, array &$acceptable_form): array
 
 function format_body(array &$in, string &$app_title): array
 {
-    $title = $out = '# ('.APP_NAME.') Message via le service '.$app_title;
+    $title = $out = '# Message via le service '.$app_title;
     $out  .= PHP_EOL.PHP_EOL;
 
     foreach ($in as $key => &$value) {
-        if (empty($value))
+        if (empty($value) || 'submit' === $key)
             continue;
 
         $out .= '## '.strtoupper($key).' :'.PHP_EOL;
         $out .= $value.PHP_EOL.PHP_EOL;
     }
 
-    $out .= '_Genrated by '.APP_NAME.'_';
+    $out .= '---'.PHP_EOL.'_Generated with '.APP_NAME.'_';
+
+    if (!empty(APP_FOOTER))
+        $out .= PHP_EOL.'_'.APP_FOOTER.'_';
 
     return array('title' => $title, 'body' => $out);
 }

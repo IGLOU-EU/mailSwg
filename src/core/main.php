@@ -77,7 +77,8 @@ function request_send(array &$msg, array &$datas): void
             continue;
 
         $url = parse_url($rqst['url']);
-        $url['type'] = empty($rqst['datas']) ? 'GET' : 'POST';
+        $url['type']  = empty($rqst['datas']) ? 'GET' : 'POST';
+        $url['query'] = isset($url['query']) ? $url['query'] : '';
 
         if ('https' === $url['scheme']) {
             $url['pfix'] = 'tls://';
@@ -166,7 +167,7 @@ function email_send(array &$msg, array &$datas): void
         .'From: =?ISO-8859-15?Q?'.imap_8bit('[BOT] '.$datas['title']).'?= <mailbot@'.$serv['dns'].'>'.PHP_EOL
         .'To: <'.implode('>, <', $emails).'>'.PHP_EOL
         .'X-Mailer: '.APP_NAME.' '.APP_VERSION.PHP_EOL
-        .'Message-ID: <'.sha1(date(DATE_RFC2822).$datas['dns']).'@'.$serv['server'].'>'.PHP_EOL
+        .'Message-ID: <'.sha1(date(DATE_RFC2822).$serv['dns']).'@'.$serv['server'].'>'.PHP_EOL
         .'Date:'.date(DATE_RFC2822).PHP_EOL
         .'MIME-Version: 1.0'.PHP_EOL
         .'Content-Type: text/plain; charset=utf-8'.PHP_EOL

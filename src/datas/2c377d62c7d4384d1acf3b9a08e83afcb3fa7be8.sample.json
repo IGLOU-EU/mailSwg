@@ -1,0 +1,33 @@
+{
+    "title": "Mon site",
+    "honeypot": true,
+    "acceptable_form": [
+        "son-nom",
+        "son-email",
+        "son-message"
+    ],
+    "return": {
+        "success": "https://monstite.url/#success",
+        "fail": "https://monstite.url/#error"
+    },
+    "request": [
+        {
+            "url": "https://web.hooks/hooks/iddelamort",
+            "header": ["Content-Type: application/json"],
+            "datas": "{\"text\":\"MAILSWG_BODY\"}"
+        }
+    ],
+    "email": {
+        "smtp": {
+            "dns": "monsite.url",
+            "server": "mail.gandi.net",
+            "port": 587,
+            "user": "bot@monsite.url",
+            "password": "42"
+        },
+        "list": [
+            "sav@monsite.url",
+            "moi@monsite.url"
+        ]
+    }
+}

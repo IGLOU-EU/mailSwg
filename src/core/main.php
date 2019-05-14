@@ -30,11 +30,11 @@ function start(): void
     $config = \file\get_decode($buffer);
 
     // Check POST request and format to str
-    if (true === $config['honeypot'] AND (
-        isset($_POST['name']) OR
-        isset($_POST['email']) OR
-        isset($_POST['message']) OR
-        isset($_POST['honeypot'])
+    if (true === $config['honeypot'] AND !(
+        empty($_POST['name']) OR
+        empty($_POST['email']) OR
+        empty($_POST['message']) OR
+        empty($_POST['honeypot'])
        )) {
         \error\send(418);
     }

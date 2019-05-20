@@ -23,7 +23,7 @@
             "server": "mail.srv.com",
             "port": 587,
             "user": "bot@monsite.url",
-            "password": "42"
+            "password": "4242"
         },
         "list": [
             "sav@monsite.url",

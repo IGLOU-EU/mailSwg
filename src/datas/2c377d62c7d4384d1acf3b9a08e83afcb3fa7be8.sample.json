@@ -20,7 +20,7 @@
     "email": {
         "smtp": {
             "dns": "monsite.url",
-            "server": "mail.gandi.net",
+            "server": "mail.srv.com",
             "port": 587,
             "user": "bot@monsite.url",
             "password": "42"

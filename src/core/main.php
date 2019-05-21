@@ -4,28 +4,31 @@ declare(strict_types = 1);
 namespace main {
 function start(): void
 {
-
     $datas   = '';
     $buffer  = '';
-    $config  = Array();
+    $config  = array();
     $request = new \Phalcon\Http\Request();
 
     // Check if is POST, is a valid ID and ok
-    if (true !== $request->isPost())
+    if (true !== $request->isPost()) {
         \send\response(405, $config);
+    }
 
     if (true !== $request->has('id') ||
         40   !== strlen($request->getQuery('id')) ||
-        true !== ctype_alnum($request->getQuery('id')))
+        true !== ctype_alnum($request->getQuery('id'))) {
         \send\response(400, $config);
-    else
+    } else {
         $buffer = APP_DATA.'/'.$request->getQuery('id').'.json';
+    }
 
-    if (!\file\exist($buffer) || !\file\is_readable($buffer, true))
+    if (!\file\exist($buffer) || !\file\is_readable($buffer, true)) {
         \send\response(500, $config);
+    }
 
-    if (empty($config = \file\get_decode($buffer)))
+    if (empty($config = \file\get_decode($buffer))) {
         \send\response(500, $config);
+    }
 
     $config['success'] = array('email' => -1, 'request' => -1);
 
@@ -41,18 +44,21 @@ function start(): void
 
     $buffer = $request->getPost(null, ['trim', 'string']);
 
-    if (!empty($config['acceptable_form']))
+    if (!empty($config['acceptable_form'])) {
         $buffer = acceptable_form($buffer, $config['acceptable_form']);
+    }
 
     $datas = format_body($buffer, $config['title']);
 
     // Check and send email
-    if (!empty($config['email']['list']))
+    if (!empty($config['email']['list'])) {
         $config['success']['email']   = \send\email($datas, $config);
+    }
 
     // Check and send request
-    if (!empty($config['request']))
+    if (!empty($config['request'])) {
         $config['success']['request'] = \send\request($datas, $config);
+    }
 
     // Return to user
     \send\response(0, $config, \status\is_success($config));
@@ -62,8 +68,9 @@ function acceptable_form(array &$in, array &$acceptable_form): array
 {
     $out = array();
 
-    foreach ($acceptable_form as $value)
+    foreach ($acceptable_form as $value) {
         $out[$value] = $in[$value];
+    }
 
     return ($out);
 }
@@ -74,8 +81,9 @@ function format_body(array &$in, string &$app_title): array
     $out  .= PHP_EOL.PHP_EOL;
 
     foreach ($in as $key => &$value) {
-        if (empty($value) || 'submit' === $key)
+        if (empty($value) || 'submit' === $key) {
             continue;
+        }
 
         $out .= '## '.strtoupper($key).' :'.PHP_EOL;
         $out .= $value.PHP_EOL.PHP_EOL;
@@ -83,8 +91,9 @@ function format_body(array &$in, string &$app_title): array
 
     $out .= '---'.PHP_EOL.'_Generated with '.APP_NAME.'_';
 
-    if (!empty(APP_FOOTER))
+    if (!empty(APP_FOOTER)) {
         $out .= PHP_EOL.'_'.APP_FOOTER.'_';
+    }
 
     return array('title' => $title, 'body' => $out);
 }
@@ -95,8 +104,9 @@ function in_log(string $str, bool $ext=false): void
 {
     error_log('[error]'.$str, 0);
 
-    if ($ext)
+    if ($ext) {
         exit(1);
+    }
 }
 
 function is_success(array &$config): bool
@@ -162,7 +172,9 @@ function email(array &$msg, array &$datas): int
     fwrite($sock, 'DATA'.PHP_EOL);
     sock_check($sock, '354');
 
-    fwrite($sock, ''
+    fwrite(
+        $sock,
+        ''
         .'Subject: =?ISO-8859-15?Q?'.imap_8bit($msg['title']).'?='.PHP_EOL
         .'From: =?ISO-8859-15?Q?'.imap_8bit('[BOT] '.$datas['title']).'?= <mailbot@'.$serv['dns'].'>'.PHP_EOL
         .'To: <'.implode('>, <', $emails).'>'.PHP_EOL
@@ -182,8 +194,9 @@ function email(array &$msg, array &$datas): int
 
     fwrite($sock, 'QUIT'.PHP_EOL);
 
-    if (!fclose($sock))
+    if (!fclose($sock)) {
         \error\log('Sock close for '.$datas['title'], false);
+    }
 
     return ($status);
 }
@@ -195,8 +208,9 @@ function request(array &$msg, array &$datas): int
     $body   = substr(json_encode($msg['body']), 1, -1);
 
     foreach ($datas['request'] as $rqst) {
-        if (empty($rqst['url']))
+        if (empty($rqst['url'])) {
             continue;
+        }
 
         $url = parse_url($rqst['url']);
         $url['type']  = empty($rqst['datas']) ? 'GET' : 'POST';
@@ -218,11 +232,13 @@ function request(array &$msg, array &$datas): int
         $header .= 'Host: '.$url['host'].PHP_EOL;
         $header .= implode(PHP_EOL, $rqst['header']).PHP_EOL;
 
-        if ('POST' === $url['type'])
+        if ('POST' === $url['type']) {
             $header .= 'Content-length: '.strlen($rqst['datas']).PHP_EOL;
+        }
 
-        if (isset($url['user']) && isset($url['pass']))
+        if (isset($url['user']) && isset($url['pass'])) {
             $header .= 'Authorization: Basic '.base64_encode($url['user'].':'.$url['pass']);
+        }
 
         $header .= 'Connection: close'.PHP_EOL.PHP_EOL;
 
@@ -256,16 +272,18 @@ function response(int $code, array &$config, bool $scs = false): void
     ) {
         $code = 302;
 
-        if (true === $scs)
+        if (true === $scs) {
             $location = &$config['return']['success'];
-        else
+        } else {
             $location = &$config['return']['fail'];
+        }
     }
 
-    if (0 === $code && true === $scs)
+    if (0 === $code && true === $scs) {
         $code = 200;
-    else if (0 === $code && false === $scs)
+    } elseif (0 === $code && false === $scs) {
         $code = 500;
+    }
 
     switch ($code) {
         case 200:
@@ -295,10 +313,11 @@ function response(int $code, array &$config, bool $scs = false): void
     } else {
         $rps->setHeader('Content-Type', 'application/json');
 
-        if (200 === $code)
+        if (200 === $code) {
             $rps->setContent('{"code": '.$code.', "message": "'.$msg.'", "success":true}');
-        else
+        } else {
             $rps->setContent('{"code": '.$code.', "message": "'.$msg.'", "success":false}');
+        }
     }
     $rps->send();
 
@@ -331,16 +350,18 @@ function sock_check($sock, string $expect): bool
 namespace file {
 function is_readable(string $item, bool $is_file = false): bool
 {
-    if (!\is_readable($item) || ($is_file && !is_file($item)) || (!$is_file && is_file($item)))
+    if (!\is_readable($item) || ($is_file && !is_file($item)) || (!$is_file && is_file($item))) {
         return (false);
+    }
 
     return (true);
 }
 
 function exist(string $item): bool
 {
-    if (!file_exists($item))
+    if (!file_exists($item)) {
         return (false);
+    }
 
     return (true);
 }

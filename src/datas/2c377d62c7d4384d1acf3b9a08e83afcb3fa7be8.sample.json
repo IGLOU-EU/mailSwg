@@ -1,6 +1,7 @@
 {
     "title": "Mon site",
     "honeypot": true,
+    "full_success": true,
     "acceptable_form": [
         "son-nom",
         "son-email",

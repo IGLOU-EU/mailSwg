@@ -33,9 +33,9 @@ function start(): void
     $config['success'] = array('email' => -1, 'request' => -1);
 
     // Check POST request and format to str
-    if (true === $config['honeypot'] && !(
-        empty($_POST['name']) &&
-        empty($_POST['email']) &&
+    if ($config['honeypot']      && !(
+        empty($_POST['name'])    &&
+        empty($_POST['email'])   &&
         empty($_POST['message']) &&
         empty($_POST['honeypot'])
     )) {
@@ -272,7 +272,7 @@ function response(int $code, array &$config, bool $scs = false): void
     ) {
         $code = 302;
 
-        if (true === $scs) {
+        if ($scs) {
             $location = &$config['return']['success'];
         } else {
             $location = &$config['return']['fail'];

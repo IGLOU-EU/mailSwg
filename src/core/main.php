@@ -51,12 +51,16 @@ function start(): void
     $datas = format_body($buffer, $config['title']);
 
     // Check and send email
-    if (!empty($config['email']['list'])) {
+    if (empty($config['email']['list'])) {
+        $config['success']['email']   = 0;
+    } else {
         $config['success']['email']   = \send\email($datas, $config);
     }
 
     // Check and send request
-    if (!empty($config['request'])) {
+    if (empty($config['request'])) {
+        $config['success']['request'] = 0;
+    } else {
         $config['success']['request'] = \send\request($datas, $config);
     }
 

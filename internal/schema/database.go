@@ -5,7 +5,6 @@
 package schema
 
 import (
-	"log"
 	"time"
 
 	"xorm.io/xorm"
@@ -16,23 +15,20 @@ import (
 
 var xe *xorm.Engine
 
-func Loader() {
+func Loader(dbPath string) error {
 	var err error
 
-	xe, err = xorm.NewEngine("sqlite3", "./test.sqlite")
+	xe, err = xorm.NewEngine("sqlite3", dbPath)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	xe.SetMapper(names.GonicMapper{})
 	xe.TZLocation, _ = time.LoadLocation("UTC")
 
-	err = xe.CreateTables(
+	return xe.CreateTables(
 		new(Client),
 		new(Webhook),
 		new(Email),
 	)
-	if err != nil {
-		log.Fatalln(err)
-	}
 }

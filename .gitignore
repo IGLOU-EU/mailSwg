@@ -46,3 +46,8 @@ tags
 
 # Local History for Visual Studio Code
 .history/
+
+# Projet
+*.sqlite
+config/*.json 
+vendor/
